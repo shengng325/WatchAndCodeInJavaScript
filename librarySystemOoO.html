@@ -1,0 +1,134 @@
+<script src="simpletest.js"></script>
+<script>
+
+//Function signature:
+// librarySystem (libraryName[, dependencies, callback])
+
+//Callback parameters:
+// libraryDependencies
+
+//Return value:
+// returns library
+
+//Requirements:
+//It should add library with no dependencies.
+//It should add library with multiple dependencies.
+//if the second argument is not an array, the libray dependencies would not be added.
+//It should handle library with dependencies even the dependency library are not created in order.
+//It should handle libraries with multilayer of dependencies.
+//The callback function for each library should run only once。
+
+(function(){
+  var libraryStorage = {};
+  
+  function librarySystem (libraryName, libraryDependency, callback){
+    if (arguments.length > 1) {
+        if (!Array.isArray(libraryDependency)) throw new TypeError ('Dependency argument should be of array type'); 
+        libraryStorage[libraryName] = {
+            dependencies: libraryDependency, //in array
+            callback: callback,
+            isCached: false
+        }
+    } else {
+        return loadLibrary(libraryName);
+    }  
+  }
+  
+  function loadLibrary(libraryName) {
+    var library = libraryStorage[libraryName];
+    var dependenciesToApply = [];
+    
+    if (library.isCached) { 
+      return library.cache;
+    } else {
+        //recursive case:
+        //if library have dependencies, load the library and map into a new array. 
+        if (library.dependencies.length > 0) {
+          dependenciesToApply = library.dependencies.map(function loadDependencyLibrary (dependency) {
+            return loadLibrary(dependency);
+          })
+        }
+        //base case
+        //if dependency libraries has been run through, return original library
+        library.cache = library.callback.apply(null, dependenciesToApply);
+        library.isCached = true;
+        return library.cache;
+    }
+  }
+  
+  window.librarySystem = librarySystem;
+})();
+
+tests({
+'It should add library with no dependencies.': function(){
+    librarySystem('libraryOne', [], function() {
+        return 'library one returned';
+    });
+    eq(librarySystem('libraryOne'), 'library one returned');
+},
+'It should add library with multiple dependencies.': function(){
+    librarySystem('name', [], function() {
+        return 'Gordon';
+    });
+    librarySystem('company', [], function() {
+        return 'Watch and Code';
+    });
+    librarySystem('workBlurb', ['name', 'company'], function(name, company) {
+        return name + ' works at ' + company;
+    });
+
+    eq(librarySystem('workBlurb'), 'Gordon works at Watch and Code'); 
+},
+'if the second argument is not an array, the libray dependencies would not be added.': function(){
+    var isTypeError = false;
+    try {
+        librarySystem('libraryThree', 1, function() {
+            return 'library three returned';
+        }); 
+    } catch (e) {
+        isTypeError = e instanceof TypeError;
+    }
+    eq(isTypeError, true); 
+},
+'It should handle library with dependencies even the dependency library are not created in order..': function(){
+    librarySystem('myIntro', ['myName', 'myPlace'], function(name, company) {
+        return name + ' lives at ' + company;
+    });
+    librarySystem('myName', [], function() {
+        return 'NTS';
+    });
+    librarySystem('myPlace', [], function() {
+        return 'Singapore';
+    });
+
+    eq(librarySystem('myIntro'), 'NTS lives at Singapore');
+},
+'The callback function for each library should run only once.': function(){
+    var numberOfCallbackTimes = 0;
+    librarySystem('libraryCall', [], function() {
+        numberOfCallbackTimes++;
+        return 'library call returned';
+    });
+    for (var i = 0; i < 5; i++)
+        librarySystem('libraryCall');
+    eq(numberOfCallbackTimes, 1);
+},
+'It should handle libraries with multilayer of dependencies.': function(){
+    librarySystem('myHobby', ['playWithMyDog', 'freedom', 'playThePiano'], function(playWithMyDog, freedom, playThePiano) {
+        return 'My hobby is to ' + playWithMyDog + ', and ' + playThePiano + '.';
+    });
+    librarySystem('playWithMyDog', ['freedom'], function(freedom) {
+        return freedom + ' to play with my dog';
+    });
+    librarySystem('freedom', [], function() {
+        return 'have time';
+    });
+    librarySystem('playThePiano', [], function() {
+        return 'play the piano';
+    });
+
+    eq(librarySystem('myHobby'), 
+    'My hobby is to have time to play with my dog, and play the piano.');
+},
+});
+</script>

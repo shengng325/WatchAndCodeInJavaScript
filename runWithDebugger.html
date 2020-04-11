@@ -1,0 +1,17 @@
+<html>
+    <head>
+        <title>runWithDebugger</title>
+    </head>
+    <body>
+        <script>
+            function runWithDebugger (callback, optionalArray) {
+                debugger;
+                if (arguments.length > 1){
+                    callback.apply(null, optionalArray);
+                } else {
+                    callback();
+                }
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <title>librarySystem</title>
+    </head>
+    <body>
+        <script>
+            (function(){
+                var libraryStorage = [];
+
+                function librarySystem(libraryName, dependencies, callback){    
+                    if (arguments.length > 2) {
+                        var libraryDependencies = [];
+                        if (Array.isArray(dependencies)) {
+                            dependencies.forEach(function(dependencyLibrary){
+                                libraryDependencies.push(libraryStorage[dependencyLibrary]);
+                            });
+                        }
+                        libraryStorage[libraryName] = callback.apply(window, libraryDependencies);
+                    } else {
+                        return libraryStorage[libraryName];
+                    }
+                }
+                window.librarySystem = librarySystem;
+            })();
+        </script>
+    </body>
+</html>
